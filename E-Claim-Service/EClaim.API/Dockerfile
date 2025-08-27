@@ -5,6 +5,10 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
 WORKDIR /app
 EXPOSE 8080
 
+# Install ICU for globalization
+RUN apk add --no-cache icu-libs
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+
 # Configure Kestrel to listen on port 8080
 ENV ASPNETCORE_URLS=http://+:8080
 
@@ -14,7 +18,9 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
 # Copy only project files first (improves caching of NuGet restore)
-COPY ["EClaim.API/EClaim.API.csproj", "EClaim.API/"]
+COPY EClaim.API/EClaim.API.csproj EClaim.API/
+COPY EClaim.Infrastructure/EClaim.Infrastructure.csproj EClaim.Infrastructure/
+COPY EClaim.Domain/EClaim.Domain.csproj EClaim.Domain/
 # Restore dependencies (cached unless csproj changes)
 RUN dotnet restore "EClaim.API/EClaim.API.csproj" --disable-parallel
 
