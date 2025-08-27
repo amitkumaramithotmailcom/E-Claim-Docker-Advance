@@ -1,0 +1,18 @@
+include:
+   - docker-compose-infra.yml
+services:
+  api:
+    image: amitkumaramit/eclaim_api:1.0
+    container_name: eclaim_api
+    ports:
+      - "5000:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__Redis=redis:6379,abortConnect=false,connectTimeout=15000
+      - ConnectionStrings__DefaultConnection=Server=172.17.221.91,1433;Database=EClaimAppDb;User Id=SA;Password=Amit@123;Encrypt=False;TrustServerCertificate=True;
+    depends_on:
+      redis:
+        condition: service_healthy
+      eclaim-db:
+        condition: service_started

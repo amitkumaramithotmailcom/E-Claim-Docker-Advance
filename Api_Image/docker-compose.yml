@@ -8,15 +8,14 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
       - ConnectionStrings__Redis=redis:6379,abortConnect=false,connectTimeout=15000
-      - ConnectionStrings__DefaultConnection=Server=172.30.0.10,1433;Database=EClaimAppDb;User Id=SA;Password=Amit@123;Encrypt=False;TrustServerCertificate=True;
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=EClaimAppDb;User Id=SA;Password=Amit@123;Encrypt=False;TrustServerCertificate=True;
     depends_on:
       redis:
         condition: service_healthy
       sqlserver:
         condition: service_started
     networks:
-      eclaimnet:
-        ipv4_address: 172.30.0.11
+      - eclaimnet
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -26,13 +25,35 @@ services:
     environment:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=Amit@123
-    mem_limit: 3g
     volumes:
       - sql_data:/var/opt/mssql
-      - ./db-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "sqlcmd -S sqlserver -U SA -P Amit@123 -Q 'SELECT 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
-      eclaimnet:
-        ipv4_address: 172.30.0.10
+      - eclaimnet
+
+  # migrate:
+  #   build: .
+  #   depends_on:
+  #     - sqlserver
+  #   entrypoint: ["dotnet", "ef", "database", "update", "--project", "EClaim.API/EClaim.API.csproj", "--startup-project", "EClaim.API/EClaim.API.csproj"]
+  #   environment:
+  #     - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=EClaimAppDb;User Id=SA;Password=Amit@123;Encrypt=False;TrustServerCertificate=True;
+
+  migrate:
+    image: amitkumaramit/eclaim_api:1.0
+    depends_on:
+      - sqlserver
+    entrypoint: [
+      "dotnet", "ef", "database", "update",
+      "--project", "E-Claim-Docker-Advance/EClaim.Infrastructure",
+      "--startup-project", "E-Claim-Docker-Advance/EClaim.API"
+    ]
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=EClaimAppDb;User=sa;Password=Amit@123;
 
   redis:
     image: redis:7
@@ -48,15 +69,11 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      eclaimnet:
-        ipv4_address: 172.30.0.12
+      - eclaimnet
 
 networks:
   eclaimnet:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.30.0.0/16
 
 volumes:
   redis_data:

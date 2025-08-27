@@ -1,0 +1,39 @@
+services:
+    eclaim-db:
+      image: mcr.microsoft.com/mssql/server:2022-latest
+      container_name: eclaim-db
+      ports:
+        - "1433:1433"
+      environment:
+        - ACCEPT_EULA=Y
+        - SA_PASSWORD=Amit@123
+      mem_limit: 3g
+      volumes:
+        - sql_data:/var/opt/mssql
+        - ./db-init:/docker-entrypoint-initdb.d
+
+    migrate:
+      build: .
+      depends_on:
+        - eclaim-db
+      entrypoint: ["dotnet", "ef", "database", "update", "--project", "EClaim.API/EClaim.API.csproj", "--startup-project", "EClaim.API/EClaim.API.csproj"]
+      environment:
+        - ConnectionStrings__DefaultConnection=Server=172.17.221.91,1433;Database=EClaimAppDb;User Id=SA;Password=Amit@123;Encrypt=False;TrustServerCertificate=True;
+
+    redis:
+        image: redis:7
+        container_name: redis
+        restart: always
+        ports:
+          - "6379:6379"
+        healthcheck:
+          test: ["CMD", "redis-cli", "ping"]
+          interval: 5s
+          timeout: 3s
+          retries: 5
+        volumes:
+          - redis_data:/data
+
+volumes:
+  redis_data:
+  sql_data:
