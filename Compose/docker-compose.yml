@@ -1,22 +1,33 @@
 services:
   app:
-    image: amitkumaramit/eclaim_app:Advance-2.0
+    image: amitkumaramit/eclaim_app:Advance-3.1
     container_name: eclaim_app
     ports:
       - "5005:81"
-      - "5006:81"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:81
-    restart: always
+      - ApiBaseUrl=http://api:80
+    depends_on:
+      - api
+    restart: on-failure     # restart policy
+    read_only: true         # root filesystem read-only
+    pids_limit: 100
+    mem_limit: 512m
+    cpus: 0.50          # limit number of processes
     networks:
       - eclaimnet
+    healthcheck:            # runtime healthcheck
+      test: ["CMD", "curl", "-f", "http://localhost:81/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
       
   api:
-    image: amitkumaramit/eclaim_api:Advance-2.0
+    image: amitkumaramit/eclaim_api:Advance-3.1
     container_name: eclaim_api
     ports:
-      - "5000:80"
+      - "127.0.0.1:5000:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
@@ -27,40 +38,70 @@ services:
         condition: service_healthy
       sqlserver:
         condition: service_started
+    restart: on-failure
+    read_only: true
+    pids_limit: 100
+    mem_limit: 1g
+    cpus: 1.0
     networks:
       - eclaimnet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserver
     ports:
-      - "1433:1433"
+      - "127.0.0.1:1433:1433"
     environment:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=Amit@123
     volumes:
       - sql_data:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "sqlcmd -S sqlserver -U SA -P Amit@123 -Q 'SELECT 1'"]
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P Amit@123 -Q 'SELECT 1' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: on-failure
     networks:
       - eclaimnet
 
   redis:
-    image: redis:7
+    image: redis:latest
     container_name: redis
     restart: always
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
+    pids_limit: 100
+    mem_limit: 512m
+    cpus: 0.5
     volumes:
       - redis_data:/data
+    networks:
+      - eclaimnet
+
+  docker-bench-security:
+    image: docker/docker-bench-security
+    container_name: docker_bench_security
+    privileged: true
+    volumes:
+      - /var/lib:/var/lib:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /usr/lib/systemd:/usr/lib/systemd:ro
+      - /etc:/etc:ro
+    command: sh -c "sleep 30 && /docker-bench-security.sh"
+    depends_on:
+      api:
+        condition: service_started
     networks:
       - eclaimnet
 

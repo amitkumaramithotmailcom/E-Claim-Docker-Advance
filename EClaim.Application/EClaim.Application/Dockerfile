@@ -2,15 +2,22 @@
 
 # Base runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
+
+# Create non-root user and group
+RUN addgroup -S eclaimgroup && adduser -S eclaimuser -G eclaimgroup
+
 WORKDIR /app
 EXPOSE 8080
 
 # Configure Kestrel to listen on port 8080
 ENV ASPNETCORE_URLS=http://+:8080
 
+# Switch to non-root user
+USER eclaimuser
+
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
-ARG BUILD_CONFIGURATION=Release
+
 WORKDIR /src
 
 # Copy only the csproj and restore (better caching)
@@ -22,15 +29,18 @@ COPY . .
 
 # Build
 WORKDIR /src/EClaim.Application
-RUN dotnet build "EClaim.Application.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-restore
+RUN dotnet build "EClaim.Application.csproj" -c Release -o /app/build --no-restore
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "EClaim.Application.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false --no-restore
+RUN dotnet publish "EClaim.Application.csproj" -c Release -o /app/publish /p:UseAppHost=false --no-restore
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
+
+# Copy published output
 COPY --from=publish /app/publish .
+
+# Start app as non-root user
 ENTRYPOINT ["dotnet", "EClaim.Application.dll"]
