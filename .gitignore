@@ -35,7 +35,7 @@ values.dev.yaml
 secrets.dev.yaml
 
 # Environment files
-.env
+# .env
 
 # Ignore Docker junk (but NOT Dockerfile or compose files, they stay tracked)
 # docker-compose.override.yml (optional if local-only)
