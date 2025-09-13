@@ -5,7 +5,7 @@ services:
     ports:
       - "5005:81"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=http://+:81
       - ApiBaseUrl=http://api:80
     depends_on:
@@ -29,10 +29,10 @@ services:
     ports:
       - "127.0.0.1:5000:80"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings__Redis=redis:6379,abortConnect=false,connectTimeout=15000
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=EClaimAppDb;User Id=SA;Password=Amit@123;Encrypt=False;TrustServerCertificate=True;
+      - ConnectionStrings__Redis=${REDIS_CONN}
+      - ConnectionStrings__DefaultConnection=${DB_CONN}
     depends_on:
       redis:
         condition: service_healthy
@@ -58,12 +58,12 @@ services:
       - "127.0.0.1:1433:1433"
     environment:
       - ACCEPT_EULA=Y
-      - SA_PASSWORD=Amit@123
+      - SA_PASSWORD=${SA_PASSWORD}
     volumes:
       - sql_data:/var/opt/mssql
     healthcheck:
       test: >
-        /bin/bash -c "timeout 5 /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P '$${SA_PASSWORD}' -Q 'SELECT 1' || exit 1"
+        /bin/bash -c "timeout 5 /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P '${SA_PASSWORD}' -Q 'SELECT 1' || exit 1"
       interval: 10s
       timeout: 5s
       retries: 15
