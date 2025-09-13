@@ -1,96 +1,6 @@
-## Run eClaimApp, eClaimApi, SQL Server, and Redis in Docker container 
+# Run eClaimApp, eClaimApi, SQL Server, and Redis in Docker container 
 
-### 1. Run backend Application in container for create image
-
-#### 1. Pull app image
-    git clone https://github.com/amitkumaramithotmailcom/E-Claim-Docker.git
-
-#### 2. Move on dockerfile folder
-    $ cd E-Claim-Docker-Advance
-    E-Claim-Docker-Advance $ cd E-Claim-Service
-    
-#### 3. Run docker build command for docker image
-    $ docker build -t amitkumaramit/eclaim_api -f EClaim.API/Dockerfile .
-
-    Comment:
-    amitkumaramithotmailcom/e-claim-docker : Image Name
-    EClaim.API/Dockerfile : docker file path
-
-    Dockerfile : [text](https://github.com/amitkumaramithotmailcom/E-Claim-Docker-Advance/blob/main/E-Claim-Service/EClaim.API/Dockerfile)
-        
-
-#### 4. Run api application
-    $ docker run -d -p 5000:5000 -e ASPNETCORE_URLS=http://+:5000 amitkumaramit/eclaim_api
-
-#### 5. Check backend app running status
-    $ docker ps 
-
-    Output :
-    CONTAINER ID   IMAGE                        COMMAND                  CREATED          STATUS          PORTS                                                                                         NAMES
-    6b380631a8c0   amitkumaramit/eclaim_api     "dotnet EClaim.API.d…"   12 minutes ago   Up 12 minutes   8080/tcp, 0.0.0.0:5000->80/tcp, 0.0.0.0:5001->80/tcp, [::]:5000->80/tcp, [::]:5001->80/tcp    eclaim_api
-
-#### 6. App accessable on below port
-    http://172.17.221.91:5000/
-    http://172.17.221.91:5001/
-    http://172.17.221.91:5000/swagger/index.html
-
-
-### 2. Run Frontend Application in container for create image
-
-#### 1. Move on dockerfile folder
-    E-E-Claim-Docker-Advance$ cd EClaim.Application
-    
-#### 2. Run docker build command for docker image
-    $ docker build -t eclaim-application-image -f EClaim.Application/Dockerfile .
-
-    Dockerfile : [text](https://github.com/amitkumaramithotmailcom/E-Claim-Docker-Advance/blob/main/EClaim.Application/EClaim.Application/Dockerfile)
-
-#### 3. Run frontend application
-	$docker run -d -p 5005:8080 --name eclaim_app eclaim-application-image
-
-#### 4. Check app running status
-    $ docker ps 
-
-    Output :
-    CONTAINER ID   IMAGE                          COMMAND                  CREATED          STATUS          PORTS                                                                                        NAMES
-    e79babff646f   amitkumaramit/eclaim_app:1.0   "dotnet EClaim.Appli…"   18 seconds ago   Up 18 seconds   8081/tcp, 0.0.0.0:5005->81/tcp, 0.0.0.0:5006->81/tcp, [::]:5005->81/tcp, [::]:5006->81/tcp   eclaim_app
-
-#### 5. App accessable on below port
-    http://172.17.221.91:5005/
-
--------------
--------------
-
-## 3. Create image and push in Docker Hub Registry
-#### 1. Docker Sign in
-	$ docker login
-#### 2. First create a repo on Docker Hub if not exists(e.g., amitkumaramit/eclaim_api)
-
-#### 2. Check images list
-	$ docker images
-
-    REPOSITORY                       TAG           IMAGE ID       CREATED        SIZE
-    amitkumaramit/eclaim_api         latest           dd66691aacc8   24 hours ago   289MB
-    amitkumaramit/eclaim_app         latest           33281b937363   25 hours ago   239MB
-    mcr.microsoft.com/mssql/server   2022-latest   298baf34796c   5 weeks ago    1.63GB
-    redis                            7             56825e2b84a2   6 weeks ago    117MB
-
-#### 3. Tag image
-	$ docker tag <RepositoryName>:<Tag> amitkumaramit/eclaim_api:Advance-2.0
-      
-        e.g. $ docker tag amitkumaramit/eclaim_api:latest amitkumaramit/eclaim_api:Advance-2.0
-			 $ docker tag amitkumaramit/eclaim_app:latest amitkumaramit/eclaim_app:Advance-2.0
-
-#### 4. Push image to Docker Hub
-	$ docker push amitkumaramit/eclaim_api:Advance-2.0
-	
-#### 5. Pull image from Docker Hub
-	$ docker pull amitkumaramit/eclaim_api:Advance-2.0
-
--------------
--------------
-
-## 4. Run containers using docker compose (App, Api, SQL Server, Redis)
+## Run containers using docker compose (App, Api, SQL Server, Redis)
 #### 1. Stop containers if running
     Stop all containers:
 	# docker stop $(docker ps -aq)
@@ -122,13 +32,16 @@
     docker-compose.yml file : [text](https://github.com/amitkumaramithotmailcom/E-Claim-Docker-Advance/blob/main/Compose/docker-compose.yml)
 
 #### 5. Run docker-compose command
-    $ docker-compose up --build -d
+    $ docker-compose up -d
 
 #### 6. Check app running status
     $ docker ps 
 
 #### 7. execute docker-compose command for down images
 	$ docker-compose down
+
+#### 8. execute docker logs command for show container logs
+	$ docker logs dd66691aacc8
 
 
 
